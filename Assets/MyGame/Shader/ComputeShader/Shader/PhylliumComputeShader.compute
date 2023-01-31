@@ -1,0 +1,51 @@
+#pragma kernel MainCS
+
+#define ThreadBlockSize 256
+#define AnimationLength 16
+
+struct PsylliumData
+{
+    float3 Position;
+    float2x2 Rotation;
+    float4 PsylliumColor;
+};
+
+RWStructuredBuffer<PsylliumData> _PsylliumDataBuffer;
+StructuredBuffer<float> _AnimationStartPositionBuffer;
+float _Time;
+float _AnimationSpeed;
+
+groupshared float Animation[AnimationLength] =
+{
+    1,
+    0.9333333333333333,
+    0.8666666666666667,
+    0.8,
+    0.7333333333333333,
+    0.6666666666666666,
+    0.6,
+    0.5333333333333333,
+    0.4666666666666667,
+    0.4,
+    0.3333333333333333,
+    0.26666666666666666,
+    0.2,
+    0.13333333333333333,
+    0.06666666666666667,
+    0
+};
+
+[numthreads(ThreadBlockSize, 1, 1)]
+void MainCS(uint3 id : SV_DispatchThreadID)
+{
+    const unsigned int index = id.x;
+
+    float sinTime = sin((_Time * _AnimationSpeed) + _AnimationStartPositionBuffer[index]);
+
+    float normal = (sinTime + 1) / 2;
+    float rot = Animation[round(normal * (AnimationLength - 1))] * radians(90);
+
+    float sinX = sin(rot);
+    float cosX = cos(rot);
+    _PsylliumDataBuffer[index].Rotation = float2x2(cosX, -sinX, sinX, cosX);
+}
